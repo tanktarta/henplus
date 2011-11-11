@@ -1,4 +1,0 @@
-Manifest-Version: 1.0
-Package-Provided-By: H.Zeller <H.Zeller@acm.org>
-License: GPL
-Main-Class: henplus.HenPlus
