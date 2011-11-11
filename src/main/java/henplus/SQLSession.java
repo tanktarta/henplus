@@ -8,9 +8,7 @@ import henplus.property.BooleanPropertyHolder;
 import henplus.property.EnumeratedPropertyHolder;
 import henplus.sqlmodel.Table;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Driver;
@@ -22,6 +20,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.SortedSet;
+
+import jline.ConsoleReader;
 
 /**
  * a SQL session.
@@ -39,12 +39,14 @@ public class SQLSession implements Interruptable {
 
     private final PropertyRegistry _propertyRegistry;
     private volatile boolean _interrupted;
+	private ConsoleReader _console;
 
     /**
      * creates a new SQL session. Open the database connection, initializes the readline library
      */
-    public SQLSession(final String url, final String user, final String password) throws IllegalArgumentException,
+    public SQLSession(ConsoleReader console, final String url, final String user, final String password) throws IllegalArgumentException,
             ClassNotFoundException, SQLException, IOException {
+    	_console = console;
         _statementCount = 0;
         _conn = null;
         _url = url;
@@ -206,13 +208,10 @@ public class SQLSession implements Interruptable {
 
     private void promptUserPassword() throws IOException {
         HenPlus.msg().println("============ authorization required ===");
-        final BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
         _interrupted = false;
         try {
             SigIntHandler.getInstance().pushInterruptable(this);
-            HenPlus.getInstance();
-            HenPlus.msg().print("Username: ");
-            _username = input.readLine();
+            _username = _console.readLine("Username: ");
             if (_interrupted) {
                 throw new IOException("connect interrupted ..");
             }
@@ -225,49 +224,17 @@ public class SQLSession implements Interruptable {
         }
     }
 
-    /**
-     * This is after a hack found in http://java.sun.com/features/2002/09/pword_mask.html
-     */
     private String promptPassword(final String prompt) throws IOException {
-        String password = "";
-        final PasswordEraserThread maskingthread = new PasswordEraserThread(prompt);
-        try {
-            final byte[] lineBuffer = new byte[64];
-            maskingthread.start();
-            while (true) {
-                if (_interrupted) {
-                    break;
-                }
-
-                maskingthread.goOn();
-                final int byteCount = System.in.read(lineBuffer);
-                /*
-                 * hold on as soon as the system call returnes. Usually, this is
-                 * because we read the newline.
-                 */
-                maskingthread.holdOn();
-
-                for (int i = 0; i < byteCount; ++i) {
-                    char c = (char) lineBuffer[i];
-                    if (c == '\r') {
-                        c = (char) lineBuffer[++i];
-                        if (c == '\n') {
-                            return password;
-                        } else {
-                            continue;
-                        }
-                    } else if (c == '\n') {
-                        return password;
-                    } else {
-                        password += c;
-                    }
-                }
+    	try {
+            SigIntHandler.getInstance().pushInterruptable(this);
+            String password =  _console.readLine("Password: ", Character.valueOf('*'));
+            if (_interrupted) {
+                throw new IOException("connect interrupted ..");
             }
+            return password;
         } finally {
-            maskingthread.done();
+            SigIntHandler.getInstance().popInterruptable();
         }
-
-        return password;
     }
 
     // -- Interruptable interface

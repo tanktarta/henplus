@@ -22,8 +22,6 @@ import java.util.Map.Entry;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
 
-import org.gnu.readline.Readline;
-
 /**
  * Command to bind function keys to commands.
  */
@@ -183,7 +181,9 @@ public class KeyBindCommand extends AbstractCommand {
 
         final String bindCmd = binding.toString();
         for (int i = 0; i < terminalValues.length; ++i) {
-            Readline.parseAndBind(terminalValues[i] + ": \"" + bindCmd + "\"");
+        	// TODO
+        	System.err.println("**TODO** aliases");
+//            Readline.parseAndBind(terminalValues[i] + ": \"" + bindCmd + "\"");
         }
         return true;
     }

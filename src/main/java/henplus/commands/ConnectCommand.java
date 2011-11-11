@@ -149,7 +149,7 @@ public class ConnectCommand extends AbstractCommand {
     private void connect(final String url, final String username, final String password) throws ClassNotFoundException,
             SQLException, IOException {
         SQLSession session;
-        session = new SQLSession(url, username, password);
+        session = new SQLSession(getConsole(), url, username, password);
         _currentSessionName = createSessionName(session, null);
         _sessionManager.addSession(_currentSessionName, session);
         _knownUrls.put(url, url);
@@ -332,7 +332,7 @@ public class ConnectCommand extends AbstractCommand {
                 }
             }
             try {
-                session = new SQLSession(url, null, null);
+                session = new SQLSession(getConsole(), url, null, null);
                 _knownUrls.put(url, url);
                 if (alias != null) {
                     _knownUrls.put(alias, url);

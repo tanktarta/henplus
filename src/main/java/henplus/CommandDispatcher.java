@@ -17,12 +17,13 @@ import java.util.SortedMap;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
 
-import org.gnu.readline.ReadlineCompleter;
+import jline.Completor;
+import jline.ConsoleReader;
 
 /**
  * The Command Dispatcher for all commands.
  */
-public class CommandDispatcher implements ReadlineCompleter {
+public class CommandDispatcher implements Completor {
 
     private static final boolean VERBOSE = false; // debug
     private final List<Command> _commands; // commands in seq. of addition.
@@ -30,8 +31,12 @@ public class CommandDispatcher implements ReadlineCompleter {
     private final SetCommand _setCommand;
     private final List<ExecutionListener> _executionListeners;
     private int _batchCount;
+	private ConsoleReader _console;
+	private HenPlus _context;
 
-    public CommandDispatcher(final SetCommand sc) {
+    public CommandDispatcher(HenPlus context, ConsoleReader console, final SetCommand sc) {
+    	_context = context;
+    	_console = console;
         _commandMap = new TreeMap<String, Command>();
         _commands = new ArrayList<Command>();
         _executionListeners = new ArrayList<ExecutionListener>();
@@ -79,6 +84,7 @@ public class CommandDispatcher implements ReadlineCompleter {
     }
 
     public void register(final Command c) {
+    	c.init(_context, _console);
         _commands.add(c);
         final String[] cmdStrings = c.getCommandList();
         for (int i = 0; i < cmdStrings.length; ++i) {
@@ -285,7 +291,7 @@ public class CommandDispatcher implements ReadlineCompleter {
 
     // -- Readline completer ..
     @Override
-    public String completer(String text, final int state) {
+	public int complete(String text, int state, List candidates) {
         final HenPlus henplus = HenPlus.getInstance();
         final String completeCommandString = henplus.getPartialLine().trim();
         boolean variableExpansion = false;
@@ -312,9 +318,10 @@ public class CommandDispatcher implements ReadlineCompleter {
                 _possibleValues = _setCommand.completeUserVar(varname);
             }
             if (_possibleValues.hasNext()) {
-                return _variablePrefix + _possibleValues.next();
+                candidates.add(_variablePrefix + _possibleValues.next());
+                return 0;
             }
-            return null;
+            return -1;
         } else if (completeCommandString.equals(text)) {
             /*
              * the first word.. the command.
@@ -338,11 +345,12 @@ public class CommandDispatcher implements ReadlineCompleter {
                     }
                 }
                 if (nextKey.startsWith(text)) {
-                    return nextKey;
+                	candidates.add(nextKey);
+                	return 0;
                 }
-                return null;
+            	return -1;
             }
-            return null;
+        	return -1;
         } else {
             /*
              * .. otherwise get completion from the specific command.
@@ -350,16 +358,18 @@ public class CommandDispatcher implements ReadlineCompleter {
             if (state == 0) {
                 final Command cmd = getCommandFrom(completeCommandString);
                 if (cmd == null) {
-                    return null;
+                	return -1;
                 }
                 _possibleValues = cmd.complete(this, completeCommandString, text);
             }
             if (_possibleValues != null && _possibleValues.hasNext()) {
-                return _possibleValues.next();
+                candidates.add(_possibleValues.next());
+                return 0;
             }
-            return null;
+            return -1;
         }
     }
+
 }
 
 /*

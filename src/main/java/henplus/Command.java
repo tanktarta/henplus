@@ -7,6 +7,8 @@ package henplus;
 import java.util.Collection;
 import java.util.Iterator;
 
+import jline.ConsoleReader;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 
@@ -60,6 +62,14 @@ public interface Command {
      * available commands. If unsure, return 'true'.
      */
     boolean participateInCommandCompletion();
+    
+    /**
+     * Initialise
+     * 
+     * @param context top level instance
+     * @param console console on which command will run.
+     */
+    void init(HenPlus context, ConsoleReader console);
 
     /**
      * execute the command given. The command is given completely without the final delimiter (which would be newline or semicolon).
